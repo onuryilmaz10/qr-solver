@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="QR kod, kartvizit ve föy/plaka oluşturucu. URL, vCard, WiFi, SMS, Email ve metin için PDF/PNG/SVG çıktısı." />
-<title>QR Stüdyo · Kod, Kartvizit, Föy</title>
+<meta name="description" content="QR kod, kartvizit ve föy/plaka oluşturucu. URL, vCard, WiFi, SMS, Email ve metin için PDF/PNG/SVG çıktısı. Bir Solveon çözümüdür." />
+<meta name="author" content="Solveon" />
+<meta property="og:title" content="QR Stüdyo · Solveon" />
+<meta property="og:description" content="QR kod, kartvizit ve föy/plaka oluşturucu — Solveon" />
+<meta property="og:url" content="https://solveon.co" />
+<meta name="theme-color" content="#6366f1" />
+<title>QR Stüdyo · Solveon</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='60' font-family='system-ui' font-weight='700' fill='white'>Q</text></svg>" />
 
 <style>
@@ -431,11 +436,37 @@
 
   footer {
     text-align: center; color: var(--text-dim);
-    font-size: 13px; padding: 24px;
+    font-size: 13px; padding: 32px 24px 40px;
     max-width: 1280px; margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
   }
   footer a { color: var(--primary); text-decoration: none; }
   footer a:hover { text-decoration: underline; }
+  .footer-brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 14px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 999px;
+    font-size: 13px; color: var(--text);
+    transition: var(--transition);
+  }
+  .footer-brand:hover { border-color: var(--primary); transform: translateY(-1px); text-decoration: none; }
+  .footer-brand .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+  }
+  .footer-brand strong { color: var(--text); font-weight: 700; letter-spacing: -0.01em; }
+  .footer-meta { color: var(--text-muted); font-size: 12px; }
+  .header-brand {
+    display: none;
+    align-items: center; gap: 6px;
+    padding: 4px 10px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: 999px;
+    font-size: 11px; color: var(--text-dim);
+    text-decoration: none; transition: var(--transition);
+  }
+  .header-brand:hover { border-color: var(--primary); color: var(--text); }
+  .header-brand strong { color: var(--text); font-weight: 700; }
+  @media (min-width: 560px) { .header-brand { display: inline-flex; } }
 
   .toast {
     position: fixed; bottom: 24px; left: 50%;
@@ -473,6 +504,10 @@
     </div>
   </div>
   <div class="header-actions">
+    <a class="header-brand" href="https://solveon.co" target="_blank" rel="noopener" title="Solveon">
+      <span class="dot" style="width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:inline-block"></span>
+      <span>by <strong>Solveon</strong></span>
+    </a>
     <button class="icon-btn" id="themeToggle" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
   </div>
 </header>
@@ -862,7 +897,11 @@
 </main>
 
 <footer>
-  Onur için yapıldı · Veri tarayıcıdan çıkmaz · Vanilla HTML/JS
+  <a class="footer-brand" href="https://solveon.co" target="_blank" rel="noopener">
+    <span class="dot"></span>
+    <span>Bir <strong>Solveon</strong> çözümüdür</span>
+  </a>
+  <div class="footer-meta">Veri tarayıcıdan çıkmaz · Açık kaynak · <a href="https://solveon.co" target="_blank" rel="noopener">solveon.co</a></div>
 </footer>
 
 <div class="toast" id="toast">Hazır!</div>
