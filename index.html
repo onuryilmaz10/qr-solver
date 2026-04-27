@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="QR kod, kartvizit ve föy/plaka oluşturucu. URL, vCard, WiFi, SMS, Email ve metin için PDF/PNG/SVG çıktısı." />
+<title>QR Stüdyo · Kod, Kartvizit, Föy</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50' y='68' text-anchor='middle' font-size='60' font-family='system-ui' font-weight='700' fill='white'>Q</text></svg>" />
+
+<style>
+  :root {
+    --bg: #0f172a;
+    --bg-elev: #1e293b;
+    --bg-card: #1e293b;
+    --bg-input: #0f172a;
+    --border: #334155;
+    --border-strong: #475569;
+    --text: #f1f5f9;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --accent: #06b6d4;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 10px 30px rgba(0,0,0,0.3);
+    --transition: all 0.2s ease;
+  }
+  [data-theme="light"] {
+    --bg: #f1f5f9;
+    --bg-elev: #ffffff;
+    --bg-card: #ffffff;
+    --bg-input: #f8fafc;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --text-dim: #475569;
+    --text-muted: #64748b;
+    --shadow: 0 10px 30px rgba(15,23,42,0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+    font-size: 15px; line-height: 1.5;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  body {
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(99,102,241,0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(6,182,212,0.08) 0%, transparent 50%);
+  }
+  [data-theme="light"] body {
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(99,102,241,0.07) 0%, transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(6,182,212,0.05) 0%, transparent 50%);
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    max-width: 1280px; margin: 0 auto;
+    padding: 20px 24px 0;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+  .logo-icon {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: grid; place-items: center; color: white; font-weight: 800; font-size: 18px;
+  }
+  .logo small { color: var(--text-dim); font-weight: 500; font-size: 13px; }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text); width: 40px; height: 40px; border-radius: 10px;
+    cursor: pointer; display: grid; place-items: center; font-size: 16px;
+    transition: var(--transition);
+  }
+  .icon-btn:hover { border-color: var(--primary); transform: translateY(-1px); }
+
+  /* ===== MODE SWITCHER ===== */
+  .mode-switcher {
+    max-width: 1280px; margin: 24px auto 0;
+    padding: 0 24px;
+    display: flex; gap: 10px;
+  }
+  .mode-btn {
+    flex: 1; padding: 16px 20px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-dim); cursor: pointer;
+    border-radius: var(--radius); font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: var(--transition); position: relative;
+  }
+  .mode-btn .mode-emoji { font-size: 22px; }
+  .mode-btn:hover { color: var(--text); border-color: var(--border-strong); }
+  .mode-btn.active {
+    background: linear-gradient(135deg, var(--primary), #818cf8);
+    color: white; border-color: var(--primary);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+  }
+  .mode-btn small { display: block; font-size: 11px; font-weight: 500; opacity: 0.85; margin-top: 2px; }
+  @media (max-width: 720px) {
+    .mode-btn { padding: 12px; font-size: 13px; }
+    .mode-btn small { display: none; }
+  }
+
+  /* ===== MAIN ===== */
+  main {
+    max-width: 1280px; margin: 0 auto;
+    padding: 20px 24px 48px;
+  }
+  .mode-panel { display: none; grid-template-columns: 1fr 460px; gap: 24px; }
+  .mode-panel.active { display: grid; }
+  @media (max-width: 980px) { .mode-panel { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .panel h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: -0.02em; }
+  .panel .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+  .panel h3 {
+    margin: 24px 0 12px; font-size: 12px; font-weight: 700;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em;
+    padding-top: 20px; border-top: 1px dashed var(--border);
+  }
+  .panel h3:first-of-type { margin-top: 20px; }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 6px; background: var(--bg-input);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 20px;
+  }
+  .tab {
+    flex: 1 1 auto; min-width: 80px;
+    background: transparent; border: none; color: var(--text-dim);
+    padding: 10px 12px; border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 13px; font-weight: 500;
+    transition: var(--transition);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(99,102,241,0.25); }
+
+  /* ===== FORM ===== */
+  .form { display: grid; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+  label { font-size: 13px; font-weight: 500; color: var(--text-dim); }
+
+  input[type="text"], input[type="url"], input[type="email"],
+  input[type="tel"], input[type="number"], input[type="password"],
+  textarea, select {
+    background: var(--bg-input); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 12px;
+    border-radius: var(--radius-sm); font-size: 14px;
+    font-family: inherit; transition: var(--transition); width: 100%;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
+  }
+  textarea { min-height: 80px; resize: vertical; }
+
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .settings-grid { grid-template-columns: 1fr; } }
+
+  .color-picker {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 6px 10px;
+  }
+  .color-picker input[type="color"] {
+    width: 32px; height: 32px; border: none; border-radius: 6px;
+    cursor: pointer; background: transparent; padding: 0;
+  }
+  .color-picker span {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  input[type="range"] { flex: 1; accent-color: var(--primary); }
+  .range-value {
+    font-family: ui-monospace, monospace; font-size: 12px;
+    color: var(--text-dim); min-width: 56px; text-align: right;
+  }
+
+  .checkbox-row {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; user-select: none; font-size: 14px;
+  }
+  .checkbox-row input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+  /* ===== LOGO UPLOAD ===== */
+  .logo-uploader {
+    border: 2px dashed var(--border); border-radius: var(--radius-sm);
+    padding: 16px; text-align: center; cursor: pointer;
+    transition: var(--transition); display: flex;
+    align-items: center; gap: 12px; background: var(--bg-input);
+  }
+  .logo-uploader:hover { border-color: var(--primary); background: rgba(99,102,241,0.05); }
+  .logo-uploader.has-logo { padding: 8px; }
+  .logo-uploader-icon { font-size: 24px; }
+  .logo-uploader-text { flex: 1; text-align: left; }
+  .logo-uploader-text strong { display: block; font-size: 14px; color: var(--text); }
+  .logo-uploader-text small { color: var(--text-dim); font-size: 12px; }
+  .logo-thumb {
+    width: 56px; height: 56px; object-fit: contain;
+    background: white; border-radius: 6px; padding: 4px;
+  }
+  .logo-clear-btn {
+    background: var(--danger); color: white; border: none;
+    padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    font-size: 12px; font-weight: 600;
+  }
+  .logo-clear-btn:hover { background: #dc2626; }
+  input[type="file"] { display: none; }
+
+  /* ===== THEME PRESETS ===== */
+  .theme-presets {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-bottom: 12px;
+  }
+  .theme-preset {
+    aspect-ratio: 1.6; border: 2px solid transparent;
+    border-radius: var(--radius-sm); cursor: pointer;
+    overflow: hidden; position: relative;
+    transition: var(--transition); display: grid;
+    grid-template-columns: 1fr auto; align-items: stretch;
+    padding: 0; font-size: 0;
+  }
+  .theme-preset::before {
+    content: ''; background: var(--p-bg, #fff);
+  }
+  .theme-preset::after {
+    content: ''; background: var(--p-accent, #6366f1);
+    width: 8px;
+  }
+  .theme-preset:hover { transform: translateY(-1px); border-color: var(--border-strong); }
+  .theme-preset.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+  }
+
+  /* ===== PREVIEW ===== */
+  .preview { position: sticky; top: 24px; align-self: start; }
+  @media (max-width: 980px) { .preview { position: static; } }
+
+  .qr-frame {
+    background: white; border-radius: var(--radius);
+    padding: 20px; display: grid; place-items: center;
+    aspect-ratio: 1; margin-bottom: 16px; transition: var(--transition);
+  }
+  .qr-frame canvas, .qr-frame svg, .qr-frame img {
+    max-width: 100%; height: auto; display: block;
+  }
+  .qr-empty { color: #94a3b8; text-align: center; font-size: 14px; padding: 40px 20px; }
+
+  /* ===== CARD PREVIEW (83×51 mm) ===== */
+  .stage {
+    background: repeating-conic-gradient(#e2e8f0 0 25%, #f8fafc 0 50%) 50% / 16px 16px;
+    border-radius: var(--radius); padding: 24px; margin-bottom: 16px;
+    display: grid; place-items: center; min-height: 240px;
+  }
+  [data-theme="light"] .stage {
+    background: repeating-conic-gradient(#e2e8f0 0 25%, #f1f5f9 0 50%) 50% / 16px 16px;
+  }
+
+  .card-preview {
+    /* Design size: 1px = 0.1mm ratio (830×510 design space) */
+    width: 830px; height: 510px;
+    background: var(--c-bg, #ffffff);
+    color: var(--c-text, #0f172a);
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 30px; padding: 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.04);
+    border-radius: 8px; overflow: hidden;
+    position: relative; transform-origin: top left;
+    will-change: transform;
+  }
+  .card-preview::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 12px; height: 100%;
+    background: var(--c-accent, #6366f1);
+  }
+  .card-left { display: flex; flex-direction: column; padding-left: 20px; min-width: 0; }
+  .card-logo-wrap {
+    height: 60px; margin-bottom: 18px;
+    display: flex; align-items: center;
+  }
+  .card-logo-wrap img {
+    max-height: 60px; max-width: 200px;
+    object-fit: contain; display: block;
+  }
+  .card-logo-wrap.empty { display: none; }
+  .card-name {
+    font-size: 30px; font-weight: 700;
+    line-height: 1.15; color: var(--c-text);
+    letter-spacing: -0.02em;
+  }
+  .card-title {
+    font-size: 15px; color: var(--c-accent);
+    font-weight: 600; margin-top: 4px;
+  }
+  .card-org {
+    font-size: 14px; color: var(--c-text);
+    opacity: 0.75; margin-top: 2px;
+  }
+  .card-divider {
+    height: 2px; width: 50px;
+    background: var(--c-accent); margin: 16px 0;
+    border-radius: 2px;
+  }
+  .card-contact {
+    list-style: none; padding: 0; margin: 0;
+    display: grid; gap: 7px;
+    font-size: 14px; color: var(--c-text);
+  }
+  .card-contact li {
+    display: flex; align-items: center; gap: 10px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .card-contact .icon {
+    width: 22px; height: 22px; border-radius: 5px;
+    background: var(--c-accent); color: white;
+    display: grid; place-items: center;
+    font-size: 11px; flex: 0 0 22px;
+  }
+  .card-right {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+  }
+  .card-qr {
+    background: white; padding: 12px; border-radius: 8px;
+    display: grid; place-items: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .card-qr canvas { display: block; width: 260px; height: 260px; image-rendering: pixelated; }
+  .card-qr-label {
+    font-size: 12px; color: var(--c-text);
+    opacity: 0.7; font-weight: 500;
+  }
+
+  /* ===== PLAQUE PREVIEW (130×160 mm) ===== */
+  .plaque-preview {
+    width: 520px; height: 640px; /* 4× ratio of mm */
+    background: var(--p-bg, #ffffff);
+    color: var(--p-text, #0f172a);
+    display: flex; flex-direction: column;
+    align-items: center; padding: 36px 30px 30px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.04);
+    border-radius: 6px; overflow: hidden;
+    position: relative; transform-origin: top left;
+    will-change: transform;
+  }
+  .plaque-preview::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 8px; background: var(--p-accent, #6366f1);
+  }
+  .plaque-qr-wrap {
+    background: white; padding: 16px; border-radius: 10px;
+    margin-top: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    display: grid; place-items: center;
+  }
+  .plaque-qr-wrap canvas { display: block; width: 320px; height: 320px; image-rendering: pixelated; }
+  .plaque-text { text-align: center; padding: 24px 8px 16px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .plaque-title {
+    font-size: 36px; font-weight: 800;
+    color: var(--p-text); letter-spacing: -0.02em;
+    line-height: 1.1; margin-bottom: 12px;
+  }
+  .plaque-desc {
+    font-size: 18px; color: var(--p-text);
+    opacity: 0.75; line-height: 1.45;
+    white-space: pre-wrap;
+  }
+  .plaque-logo-wrap {
+    display: flex; align-items: center; justify-content: center;
+    height: 80px; margin-top: 10px;
+  }
+  .plaque-logo-wrap img {
+    max-height: 80px; max-width: 280px;
+    object-fit: contain; display: block;
+  }
+  .plaque-logo-wrap.empty { display: none; }
+
+  /* ===== ACTIONS ===== */
+  .info-row {
+    margin-top: 16px; padding: 10px 14px;
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px; color: var(--text-dim);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .actions {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .actions.four { grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 640px) {
+    .actions.four { grid-template-columns: repeat(4, 1fr); }
+    .actions.three { grid-template-columns: repeat(3, 1fr); }
+  }
+  .btn {
+    background: var(--primary); color: white; border: none;
+    padding: 12px 14px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: var(--transition);
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.secondary { background: var(--bg-input); color: var(--text); border: 1px solid var(--border); }
+  .btn.secondary:hover { border-color: var(--primary); background: var(--bg-elev); }
+  .btn-emoji { font-size: 14px; }
+
+  footer {
+    text-align: center; color: var(--text-dim);
+    font-size: 13px; padding: 24px;
+    max-width: 1280px; margin: 0 auto;
+  }
+  footer a { color: var(--primary); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--success); color: white;
+    padding: 12px 20px; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500; box-shadow: var(--shadow);
+    transition: transform 0.3s ease; z-index: 1000;
+    pointer-events: none; max-width: 90vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .hidden { display: none !important; }
+  .qr-type-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-bottom: 16px;
+  }
+  .qr-type-grid .tab { flex: none; min-width: 0; }
+
+  /* Hidden export stages — kept off-screen but rendered */
+  .export-stage {
+    position: fixed; left: -10000px; top: 0;
+    pointer-events: none; opacity: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">Q</div>
+    <div>
+      <div>QR Stüdyo</div>
+      <small>Kod · Kartvizit · Föy</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" id="themeToggle" title="Tema değiştir" aria-label="Tema değiştir">🌙</button>
+  </div>
+</header>
+
+<nav class="mode-switcher">
+  <button class="mode-btn active" data-mode="qr">
+    <span class="mode-emoji">📱</span>
+    <div><div>Düz QR</div><small>URL, vCard, WiFi…</small></div>
+  </button>
+  <button class="mode-btn" data-mode="card">
+    <span class="mode-emoji">💼</span>
+    <div><div>Kartvizit</div><small>83 × 51 mm</small></div>
+  </button>
+  <button class="mode-btn" data-mode="plaque">
+    <span class="mode-emoji">📋</span>
+    <div><div>Föy / Plaka</div><small>13 × 16 cm</small></div>
+  </button>
+</nav>
+
+<main>
+
+<!-- ============== MODE: DÜZ QR ============== -->
+<div class="mode-panel active" data-mode-panel="qr">
+  <section class="panel">
+    <h2>QR Kod Oluştur</h2>
+    <p class="subtitle">Tipi seç, alanları doldur — kod sağda anlık olarak güncellenir.</p>
+
+    <div class="tabs" id="qrTabs">
+      <button class="tab active" data-type="url">🔗 URL</button>
+      <button class="tab" data-type="vcard">👤 vCard</button>
+      <button class="tab" data-type="text">📝 Metin</button>
+      <button class="tab" data-type="email">✉️ Email</button>
+      <button class="tab" data-type="phone">📞 Telefon</button>
+      <button class="tab" data-type="sms">💬 SMS</button>
+      <button class="tab" data-type="wifi">📶 WiFi</button>
+    </div>
+
+    <!-- Forms -->
+    <div class="form" id="qr-form-url">
+      <div class="form-group">
+        <label for="qr-url">Web Adresi (URL)</label>
+        <input type="url" id="qr-url" placeholder="https://example.com" value="https://example.com" />
+      </div>
+    </div>
+
+    <div class="form hidden" id="qr-form-vcard">
+      <div class="form-row">
+        <div class="form-group"><label>Ad</label><input type="text" id="qr-vcard-first" placeholder="Ahmet" /></div>
+        <div class="form-group"><label>Soyad</label><input type="text" id="qr-vcard-last" placeholder="Yılmaz" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Şirket</label><input type="text" id="qr-vcard-org" placeholder="Acme Inc." /></div>
+        <div class="form-group"><label>Ünvan</label><input type="text" id="qr-vcard-title" placeholder="Yazılım Geliştirici" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Telefon</label><input type="tel" id="qr-vcard-phone" placeholder="+90 555 000 00 00" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="qr-vcard-email" placeholder="ahmet@example.com" /></div>
+      </div>
+      <div class="form-group"><label>Web Sitesi</label><input type="url" id="qr-vcard-url" placeholder="https://example.com" /></div>
+      <div class="form-group"><label>Adres</label><input type="text" id="qr-vcard-addr" placeholder="Sokak, Şehir, Ülke" /></div>
+    </div>
+
+    <div class="form hidden" id="qr-form-text">
+      <div class="form-group"><label>Metin</label><textarea id="qr-text" placeholder="QR koda gömmek istediğin metin..."></textarea></div>
+    </div>
+
+    <div class="form hidden" id="qr-form-email">
+      <div class="form-group"><label>Alıcı</label><input type="email" id="qr-email-to" placeholder="kime@example.com" /></div>
+      <div class="form-group"><label>Konu</label><input type="text" id="qr-email-subj" placeholder="Merhaba" /></div>
+      <div class="form-group"><label>Mesaj</label><textarea id="qr-email-body" placeholder="Mesaj içeriği..."></textarea></div>
+    </div>
+
+    <div class="form hidden" id="qr-form-phone">
+      <div class="form-group"><label>Telefon Numarası</label><input type="tel" id="qr-phone" placeholder="+90 555 000 00 00" /></div>
+    </div>
+
+    <div class="form hidden" id="qr-form-sms">
+      <div class="form-group"><label>Telefon Numarası</label><input type="tel" id="qr-sms-phone" placeholder="+90 555 000 00 00" /></div>
+      <div class="form-group"><label>Mesaj</label><textarea id="qr-sms-msg" placeholder="Hazır mesaj..."></textarea></div>
+    </div>
+
+    <div class="form hidden" id="qr-form-wifi">
+      <div class="form-group"><label>Ağ Adı (SSID)</label><input type="text" id="qr-wifi-ssid" placeholder="MyWiFi" /></div>
+      <div class="form-row">
+        <div class="form-group"><label>Şifre</label><input type="text" id="qr-wifi-pwd" placeholder="••••••••" /></div>
+        <div class="form-group">
+          <label>Şifreleme</label>
+          <select id="qr-wifi-enc">
+            <option value="WPA">WPA / WPA2</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">Şifresiz</option>
+          </select>
+        </div>
+      </div>
+      <label class="checkbox-row"><input type="checkbox" id="qr-wifi-hidden" /><span>Gizli ağ</span></label>
+    </div>
+
+    <h3>Görünüm</h3>
+    <div class="settings-grid">
+      <div class="form-group">
+        <label>Ön Plan Rengi</label>
+        <div class="color-picker">
+          <input type="color" id="qr-fg" value="#0f172a" />
+          <span id="qr-fg-text">#0F172A</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Arka Plan Rengi</label>
+        <div class="color-picker">
+          <input type="color" id="qr-bg" value="#ffffff" />
+          <span id="qr-bg-text">#FFFFFF</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Boyut (mm) <small style="color:var(--text-muted)">PDF için</small></label>
+        <div class="range-row">
+          <input type="range" id="qr-mm" min="20" max="200" step="5" value="60" />
+          <span class="range-value" id="qr-mm-text">60 mm</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Hata Düzeltme</label>
+        <select id="qr-ecc">
+          <option value="L">Düşük (~7%)</option>
+          <option value="M" selected>Orta (~15%)</option>
+          <option value="Q">Yüksek (~25%)</option>
+          <option value="H">En yüksek (~30%)</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <aside class="preview">
+    <div class="panel">
+      <h2>Önizleme</h2>
+      <p class="subtitle">Telefonunla okutarak test edebilirsin.</p>
+
+      <div class="qr-frame" id="qrFrame">
+        <div class="qr-empty">Form alanlarını doldurmaya başla...</div>
+      </div>
+
+      <div class="actions four">
+        <button class="btn" data-action="qr-png"><span class="btn-emoji">🖼</span>PNG</button>
+        <button class="btn" data-action="qr-jpg"><span class="btn-emoji">🖼</span>JPG</button>
+        <button class="btn" data-action="qr-svg"><span class="btn-emoji">📐</span>SVG</button>
+        <button class="btn" data-action="qr-pdf"><span class="btn-emoji">📄</span>PDF</button>
+      </div>
+
+      <div class="info-row">
+        <span id="qr-charcount">0 karakter</span>
+        <span id="qr-typename">URL</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ============== MODE: KARTVIZIT ============== -->
+<div class="mode-panel" data-mode-panel="card">
+  <section class="panel">
+    <h2>Kartvizit</h2>
+    <p class="subtitle">Yatay 83 × 51 mm. PDF baskıya hazır, kesme payı dahil değildir.</p>
+
+    <div class="form">
+      <div class="form-row">
+        <div class="form-group"><label>Ad</label><input type="text" id="card-first" placeholder="Onur" /></div>
+        <div class="form-group"><label>Soyad</label><input type="text" id="card-last" placeholder="Yılmaz" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Ünvan</label><input type="text" id="card-title" placeholder="Yazılım Geliştirici" /></div>
+        <div class="form-group"><label>Şirket</label><input type="text" id="card-org" placeholder="Acme Inc." /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Telefon</label><input type="tel" id="card-phone" placeholder="+90 555 000 00 00" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="card-email" placeholder="onur@example.com" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Web</label><input type="url" id="card-web" placeholder="example.com" /></div>
+        <div class="form-group"><label>Adres / Şehir</label><input type="text" id="card-addr" placeholder="İstanbul, Türkiye" /></div>
+      </div>
+    </div>
+
+    <h3>Logo</h3>
+    <label class="logo-uploader" id="card-logo-uploader" for="card-logo-input">
+      <span class="logo-uploader-icon">📤</span>
+      <div class="logo-uploader-text">
+        <strong>Logo yükle</strong>
+        <small>PNG / SVG / JPG · ideal 600×200 px</small>
+      </div>
+      <input type="file" id="card-logo-input" accept="image/*" />
+    </label>
+
+    <h3>Renk Teması</h3>
+    <div class="theme-presets" id="card-presets"></div>
+    <div class="settings-grid">
+      <div class="form-group">
+        <label>Arka Plan</label>
+        <div class="color-picker">
+          <input type="color" id="card-c-bg" value="#ffffff" />
+          <span id="card-c-bg-text">#FFFFFF</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Yazı Rengi</label>
+        <div class="color-picker">
+          <input type="color" id="card-c-text" value="#0f172a" />
+          <span id="card-c-text-text">#0F172A</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Vurgu (Şerit/Ünvan)</label>
+        <div class="color-picker">
+          <input type="color" id="card-c-accent" value="#6366f1" />
+          <span id="card-c-accent-text">#6366F1</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>QR Koyu Renk</label>
+        <div class="color-picker">
+          <input type="color" id="card-c-qr" value="#0f172a" />
+          <span id="card-c-qr-text">#0F172A</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="preview">
+    <div class="panel">
+      <h2>Önizleme</h2>
+      <p class="subtitle">Kart birebir 83×51mm oranındadır.</p>
+
+      <div class="stage">
+        <div class="card-preview" id="cardPreview" style="--c-bg:#ffffff;--c-text:#0f172a;--c-accent:#6366f1;">
+          <div class="card-left">
+            <div class="card-logo-wrap empty" id="card-logo-wrap"><img id="card-logo-img" alt="" /></div>
+            <div class="card-name" id="card-pv-name">Onur Yılmaz</div>
+            <div class="card-title" id="card-pv-title">Yazılım Geliştirici</div>
+            <div class="card-org" id="card-pv-org">Acme Inc.</div>
+            <div class="card-divider"></div>
+            <ul class="card-contact" id="card-pv-contact">
+              <li><span class="icon">☎</span><span>+90 555 000 00 00</span></li>
+              <li><span class="icon">✉</span><span>onur@example.com</span></li>
+              <li><span class="icon">🌐</span><span>example.com</span></li>
+              <li><span class="icon">📍</span><span>İstanbul, Türkiye</span></li>
+            </ul>
+          </div>
+          <div class="card-right">
+            <div class="card-qr" id="card-qr-slot"></div>
+            <div class="card-qr-label">Telefonla tara</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions three">
+        <button class="btn" data-action="card-png"><span class="btn-emoji">🖼</span>PNG</button>
+        <button class="btn" data-action="card-jpg"><span class="btn-emoji">🖼</span>JPG</button>
+        <button class="btn" data-action="card-pdf"><span class="btn-emoji">📄</span>PDF (83×51mm)</button>
+      </div>
+
+      <div class="info-row">
+        <span>Yatay · 83 × 51 mm</span>
+        <span>vCard QR gömülü</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ============== MODE: FÖY/PLAKA ============== -->
+<div class="mode-panel" data-mode-panel="plaque">
+  <section class="panel">
+    <h2>Föy / Plaka</h2>
+    <p class="subtitle">Dikey 13 × 16 cm. WiFi şifresi, menü, rezervasyon vs. için ideal.</p>
+
+    <h3>QR Tipi</h3>
+    <div class="qr-type-grid" id="plTabs">
+      <button class="tab active" data-type="url">🔗 URL</button>
+      <button class="tab" data-type="wifi">📶 WiFi</button>
+      <button class="tab" data-type="text">📝 Metin</button>
+      <button class="tab" data-type="vcard">👤 vCard</button>
+      <button class="tab" data-type="email">✉️ Email</button>
+      <button class="tab" data-type="phone">📞 Telefon</button>
+    </div>
+
+    <div class="form" id="pl-form-url">
+      <div class="form-group"><label>URL</label><input type="url" id="pl-url" placeholder="https://example.com" value="https://example.com" /></div>
+    </div>
+    <div class="form hidden" id="pl-form-wifi">
+      <div class="form-group"><label>Ağ Adı (SSID)</label><input type="text" id="pl-wifi-ssid" placeholder="MyWiFi" /></div>
+      <div class="form-row">
+        <div class="form-group"><label>Şifre</label><input type="text" id="pl-wifi-pwd" placeholder="••••••••" /></div>
+        <div class="form-group"><label>Şifreleme</label>
+          <select id="pl-wifi-enc"><option value="WPA">WPA/WPA2</option><option value="WEP">WEP</option><option value="nopass">Şifresiz</option></select>
+        </div>
+      </div>
+      <label class="checkbox-row"><input type="checkbox" id="pl-wifi-hidden" /><span>Gizli ağ</span></label>
+    </div>
+    <div class="form hidden" id="pl-form-text">
+      <div class="form-group"><label>Metin</label><textarea id="pl-text" placeholder="QR koda gömülecek metin"></textarea></div>
+    </div>
+    <div class="form hidden" id="pl-form-vcard">
+      <div class="form-row">
+        <div class="form-group"><label>Ad</label><input type="text" id="pl-vcard-first" /></div>
+        <div class="form-group"><label>Soyad</label><input type="text" id="pl-vcard-last" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Telefon</label><input type="tel" id="pl-vcard-phone" /></div>
+        <div class="form-group"><label>Email</label><input type="email" id="pl-vcard-email" /></div>
+      </div>
+    </div>
+    <div class="form hidden" id="pl-form-email">
+      <div class="form-group"><label>Alıcı</label><input type="email" id="pl-email-to" /></div>
+      <div class="form-group"><label>Konu</label><input type="text" id="pl-email-subj" /></div>
+    </div>
+    <div class="form hidden" id="pl-form-phone">
+      <div class="form-group"><label>Telefon Numarası</label><input type="tel" id="pl-phone" /></div>
+    </div>
+
+    <h3>Metin İçeriği</h3>
+    <div class="form">
+      <div class="form-group">
+        <label>Başlık</label>
+        <input type="text" id="pl-title" placeholder="Ücretsiz WiFi" value="Menü için QR'ı Tarayın" />
+      </div>
+      <div class="form-group">
+        <label>Açıklama</label>
+        <textarea id="pl-desc" placeholder="Telefonunuzun kamerasıyla okutun">Telefonunuzun kamerasıyla okutarak içeriğe ulaşabilirsiniz.</textarea>
+      </div>
+    </div>
+
+    <h3>Logo (alt)</h3>
+    <label class="logo-uploader" id="pl-logo-uploader" for="pl-logo-input">
+      <span class="logo-uploader-icon">📤</span>
+      <div class="logo-uploader-text">
+        <strong>Logo yükle</strong>
+        <small>Sayfanın altına yerleşir</small>
+      </div>
+      <input type="file" id="pl-logo-input" accept="image/*" />
+    </label>
+
+    <h3>Renk Teması</h3>
+    <div class="theme-presets" id="pl-presets"></div>
+    <div class="settings-grid">
+      <div class="form-group"><label>Arka Plan</label>
+        <div class="color-picker"><input type="color" id="pl-c-bg" value="#ffffff" /><span id="pl-c-bg-text">#FFFFFF</span></div>
+      </div>
+      <div class="form-group"><label>Yazı Rengi</label>
+        <div class="color-picker"><input type="color" id="pl-c-text" value="#0f172a" /><span id="pl-c-text-text">#0F172A</span></div>
+      </div>
+      <div class="form-group"><label>Üst Şerit</label>
+        <div class="color-picker"><input type="color" id="pl-c-accent" value="#6366f1" /><span id="pl-c-accent-text">#6366F1</span></div>
+      </div>
+      <div class="form-group"><label>QR Koyu Renk</label>
+        <div class="color-picker"><input type="color" id="pl-c-qr" value="#0f172a" /><span id="pl-c-qr-text">#0F172A</span></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="preview">
+    <div class="panel">
+      <h2>Önizleme</h2>
+      <p class="subtitle">Föy birebir 13×16 cm oranındadır.</p>
+
+      <div class="stage">
+        <div class="plaque-preview" id="plaquePreview" style="--p-bg:#ffffff;--p-text:#0f172a;--p-accent:#6366f1;">
+          <div class="plaque-qr-wrap" id="pl-qr-slot"></div>
+          <div class="plaque-text">
+            <div class="plaque-title" id="pl-pv-title">Menü için QR'ı Tarayın</div>
+            <div class="plaque-desc" id="pl-pv-desc">Telefonunuzun kamerasıyla okutarak içeriğe ulaşabilirsiniz.</div>
+          </div>
+          <div class="plaque-logo-wrap empty" id="pl-logo-wrap"><img id="pl-logo-img" alt="" /></div>
+        </div>
+      </div>
+
+      <div class="actions three">
+        <button class="btn" data-action="pl-png"><span class="btn-emoji">🖼</span>PNG</button>
+        <button class="btn" data-action="pl-jpg"><span class="btn-emoji">🖼</span>JPG</button>
+        <button class="btn" data-action="pl-pdf"><span class="btn-emoji">📄</span>PDF (130×160mm)</button>
+      </div>
+
+      <div class="info-row">
+        <span>Dikey · 130 × 160 mm</span>
+        <span id="pl-char">0 karakter</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+</main>
+
+<footer>
+  Onur için yapıldı · Veri tarayıcıdan çıkmaz · Vanilla HTML/JS
+</footer>
+
+<div class="toast" id="toast">Hazır!</div>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+(function(){
+'use strict';
+
+/* =================== UTILS =================== */
+const $ = (id) => document.getElementById(id);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+const v = (id) => ($(id) && $(id).value || '').trim();
+
+function escapeVCard(s){ return (s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n'); }
+function escapeWifi(s){ return (s||'').replace(/([\\;,":])/g,'\\$1'); }
+function hexToRgb(hex){
+  hex = (hex||'').replace('#','');
+  if (hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  return [parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];
+}
+function ts(){ return new Date().toISOString().slice(0,10); }
+
+/* =================== TOAST =================== */
+const toastEl = $('toast');
+let toastTimer;
+function toast(msg, isErr){
+  toastEl.textContent = msg;
+  toastEl.style.background = isErr ? 'var(--danger)' : 'var(--success)';
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toastEl.classList.remove('show'), 2500);
+}
+
+/* =================== QR GENERATION =================== */
+function makeQR(text, ecc){
+  if (!text) throw new Error('Veri boş');
+  let lastErr;
+  for (let t = 0; t <= 40; t++){
+    try {
+      const qr = qrcode(t, ecc || 'M');
+      qr.addData(text);
+      qr.make();
+      return qr;
+    } catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error('QR oluşturulamadı');
+}
+
+function drawQRCanvas(qr, sizePx, fg, bg){
+  const moduleCount = qr.getModuleCount();
+  const margin = 2;
+  const total = moduleCount + margin * 2;
+  const moduleSize = Math.max(1, Math.floor(sizePx / total));
+  const actual = moduleSize * total;
+  const c = document.createElement('canvas');
+  c.width = actual; c.height = actual;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,actual,actual);
+  ctx.fillStyle = fg;
+  for (let r = 0; r < moduleCount; r++){
+    for (let col = 0; col < moduleCount; col++){
+      if (qr.isDark(r, col)){
+        ctx.fillRect((col+margin)*moduleSize, (r+margin)*moduleSize, moduleSize, moduleSize);
+      }
+    }
+  }
+  return c;
+}
+
+function drawQRSVG(qr, sizePx, fg, bg){
+  const moduleCount = qr.getModuleCount();
+  const margin = 2;
+  const total = moduleCount + margin * 2;
+  const m = sizePx / total;
+  let rects = '';
+  for (let r = 0; r < moduleCount; r++){
+    for (let col = 0; col < moduleCount; col++){
+      if (qr.isDark(r, col)){
+        const x = +((col+margin)*m).toFixed(3);
+        const y = +((r+margin)*m).toFixed(3);
+        const s = +m.toFixed(3);
+        rects += `<rect x="${x}" y="${y}" width="${s}" height="${s}"/>`;
+      }
+    }
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sizePx} ${sizePx}" width="${sizePx}" height="${sizePx}" shape-rendering="crispEdges"><rect width="${sizePx}" height="${sizePx}" fill="${bg}"/><g fill="${fg}">${rects}</g></svg>`;
+}
+
+function drawQRToPDF(pdf, qr, x, y, sizeMM, fgHex, bgHex){
+  const moduleCount = qr.getModuleCount();
+  const margin = 2;
+  const total = moduleCount + margin * 2;
+  const m = sizeMM / total;
+  const [bgR,bgG,bgB] = hexToRgb(bgHex);
+  const [fgR,fgG,fgB] = hexToRgb(fgHex);
+  pdf.setFillColor(bgR,bgG,bgB);
+  pdf.rect(x, y, sizeMM, sizeMM, 'F');
+  pdf.setFillColor(fgR,fgG,fgB);
+  for (let r = 0; r < moduleCount; r++){
+    for (let col = 0; col < moduleCount; col++){
+      if (qr.isDark(r, col)){
+        pdf.rect(x + (col+margin)*m, y + (r+margin)*m, m, m, 'F');
+      }
+    }
+  }
+}
+
+/* =================== MODE SWITCHER =================== */
+let currentMode = 'qr';
+$$('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    $$('.mode-panel').forEach(p => p.classList.toggle('active', p.dataset.modePanel === currentMode));
+    setTimeout(scaleAllStages, 50);
+  });
+});
+
+/* =================== TYPE TABS HELPER =================== */
+function setupTypeTabs(tabsId, formPrefix, onChange){
+  const tabs = $$('#' + tabsId + ' .tab');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const type = tab.dataset.type;
+      $$('[id^="' + formPrefix + '-form-"]').forEach(f => {
+        f.classList.toggle('hidden', f.id !== formPrefix + '-form-' + type);
+      });
+      if (onChange) onChange(type);
+    });
+  });
+}
+
+/* =================== PAYLOAD BUILDERS =================== */
+function buildPayload(type, prefix){
+  const id = (suffix) => prefix + '-' + suffix;
+  switch(type){
+    case 'url': return v(id('url'));
+    case 'text': return v(id('text'));
+    case 'phone': { const n = v(id('phone')); return n ? 'tel:'+n : ''; }
+    case 'email': {
+      const to = v(id('email-to'));
+      const subj = v(id('email-subj'));
+      const body = v(id('email-body'));
+      if (!to && !subj && !body) return '';
+      const params = [];
+      if (subj) params.push('subject=' + encodeURIComponent(subj));
+      if (body) params.push('body=' + encodeURIComponent(body));
+      return 'mailto:' + to + (params.length ? '?' + params.join('&') : '');
+    }
+    case 'sms': {
+      const n = v(id('sms-phone'));
+      const m = v(id('sms-msg'));
+      if (!n && !m) return '';
+      return 'SMSTO:' + n + ':' + m;
+    }
+    case 'wifi': {
+      const ssid = v(id('wifi-ssid'));
+      if (!ssid) return '';
+      const enc = $(id('wifi-enc')).value;
+      const pwd = v(id('wifi-pwd'));
+      const hidden = $(id('wifi-hidden')).checked;
+      let s = 'WIFI:T:' + enc + ';S:' + escapeWifi(ssid) + ';';
+      if (enc !== 'nopass') s += 'P:' + escapeWifi(pwd) + ';';
+      if (hidden) s += 'H:true;';
+      return s + ';';
+    }
+    case 'vcard': {
+      const first = v(id('vcard-first'));
+      const last = v(id('vcard-last'));
+      const fn = (first + ' ' + last).trim();
+      const lines = ['BEGIN:VCARD','VERSION:3.0'];
+      lines.push('N:' + escapeVCard(last) + ';' + escapeVCard(first) + ';;;');
+      if (fn) lines.push('FN:' + escapeVCard(fn));
+      const org = v(id('vcard-org')); if (org) lines.push('ORG:' + escapeVCard(org));
+      const title = v(id('vcard-title')); if (title) lines.push('TITLE:' + escapeVCard(title));
+      const phone = v(id('vcard-phone')); if (phone) lines.push('TEL;TYPE=CELL:' + phone);
+      const email = v(id('vcard-email')); if (email) lines.push('EMAIL:' + email);
+      const url = v(id('vcard-url')); if (url) lines.push('URL:' + url);
+      const addr = v(id('vcard-addr')); if (addr) lines.push('ADR:;;' + escapeVCard(addr) + ';;;;');
+      lines.push('END:VCARD');
+      return lines.join('\n');
+    }
+  }
+  return '';
+}
+
+function buildCardVCard(){
+  const first = v('card-first');
+  const last = v('card-last');
+  const fn = (first + ' ' + last).trim();
+  const lines = ['BEGIN:VCARD','VERSION:3.0'];
+  lines.push('N:' + escapeVCard(last) + ';' + escapeVCard(first) + ';;;');
+  if (fn) lines.push('FN:' + escapeVCard(fn));
+  const org = v('card-org'); if (org) lines.push('ORG:' + escapeVCard(org));
+  const title = v('card-title'); if (title) lines.push('TITLE:' + escapeVCard(title));
+  const phone = v('card-phone'); if (phone) lines.push('TEL;TYPE=CELL:' + phone);
+  const email = v('card-email'); if (email) lines.push('EMAIL:' + email);
+  const web = v('card-web'); if (web) lines.push('URL:' + web);
+  const addr = v('card-addr'); if (addr) lines.push('ADR:;;' + escapeVCard(addr) + ';;;;');
+  lines.push('END:VCARD');
+  return lines.join('\n');
+}
+
+/* =================== DÜZ QR MODE =================== */
+let qrCurrentType = 'url';
+let qrLastQR = null;
+let qrLastPayload = '';
+
+setupTypeTabs('qrTabs', 'qr', (t) => {
+  qrCurrentType = t;
+  const labels = {url:'URL',vcard:'vCard',text:'Metin',email:'Email',phone:'Telefon',sms:'SMS',wifi:'WiFi'};
+  $('qr-typename').textContent = labels[t] || t;
+  qrRender();
+});
+
+function qrRender(){
+  const payload = buildPayload(qrCurrentType, 'qr');
+  qrLastPayload = payload;
+  $('qr-charcount').textContent = payload.length + ' karakter';
+  const frame = $('qrFrame');
+  if (!payload){
+    frame.innerHTML = '<div class="qr-empty">Form alanlarını doldurmaya başla...</div>';
+    frame.style.background = '#ffffff';
+    qrLastQR = null;
+    return;
+  }
+  frame.innerHTML = '';
+  frame.style.background = $('qr-bg').value;
+  try {
+    qrLastQR = makeQR(payload, $('qr-ecc').value);
+    const c = drawQRCanvas(qrLastQR, 512, $('qr-fg').value, $('qr-bg').value);
+    frame.appendChild(c);
+  } catch(e){
+    qrLastQR = null;
+    frame.innerHTML = '<div class="qr-empty" style="color:#ef4444">Hata: ' + (e.message||'?') + '</div>';
+  }
+}
+
+/* QR exports */
+function qrExport(kind){
+  if (!qrLastPayload || !qrLastQR){ toast('Önce form alanlarını doldur', true); return; }
+  const fg = $('qr-fg').value, bg = $('qr-bg').value;
+  const sizeMM = parseInt($('qr-mm').value, 10);
+  const px = Math.round(sizeMM * 11.811); // ≈300 DPI
+  const fname = 'qr-' + qrCurrentType + '-' + ts();
+  try {
+    if (kind === 'png' || kind === 'jpg'){
+      const c = drawQRCanvas(qrLastQR, px, fg, bg);
+      const mime = kind === 'jpg' ? 'image/jpeg' : 'image/png';
+      const url = c.toDataURL(mime, 0.95);
+      const a = document.createElement('a');
+      a.href = url; a.download = fname + '.' + kind; a.click();
+      toast(kind.toUpperCase() + ' indirildi');
+    } else if (kind === 'svg'){
+      const svg = drawQRSVG(qrLastQR, sizeMM * 10, fg, bg);
+      const blob = new Blob([svg], {type:'image/svg+xml;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fname + '.svg'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+      toast('SVG indirildi');
+    } else if (kind === 'pdf'){
+      const { jsPDF } = window.jspdf;
+      const pad = 10;
+      const pdf = new jsPDF({ unit:'mm', format:[sizeMM + pad*2, sizeMM + pad*2] });
+      drawQRToPDF(pdf, qrLastQR, pad, pad, sizeMM, fg, bg);
+      pdf.save(fname + '.pdf');
+      toast('PDF indirildi');
+    }
+  } catch(e){ toast('Hata: ' + e.message, true); }
+}
+
+/* =================== KARTVIZIT MODE =================== */
+let cardLogoData = null;
+
+function cardRefreshUI(){
+  const first = v('card-first') || 'Onur';
+  const last = v('card-last') || 'Yılmaz';
+  $('card-pv-name').textContent = (first + ' ' + last).trim() || 'Ad Soyad';
+  $('card-pv-title').textContent = v('card-title') || 'Ünvan';
+  $('card-pv-org').textContent = v('card-org') || 'Şirket';
+
+  const items = [
+    { icon: '☎', text: v('card-phone') || '+90 555 000 00 00' },
+    { icon: '✉', text: v('card-email') || 'mail@example.com' },
+    { icon: '🌐', text: v('card-web') || 'example.com' },
+    { icon: '📍', text: v('card-addr') || 'Şehir' }
+  ].filter(it => it.text);
+  $('card-pv-contact').innerHTML = items.map(it =>
+    '<li><span class="icon">'+it.icon+'</span><span>'+escapeHtml(it.text)+'</span></li>'
+  ).join('');
+
+  const logoWrap = $('card-logo-wrap');
+  if (cardLogoData){
+    $('card-logo-img').src = cardLogoData;
+    logoWrap.classList.remove('empty');
+  } else {
+    logoWrap.classList.add('empty');
+  }
+
+  // Apply theme vars
+  const card = $('cardPreview');
+  card.style.setProperty('--c-bg', $('card-c-bg').value);
+  card.style.setProperty('--c-text', $('card-c-text').value);
+  card.style.setProperty('--c-accent', $('card-c-accent').value);
+
+  // Generate vCard QR
+  const payload = buildCardVCard();
+  const slot = $('card-qr-slot');
+  slot.innerHTML = '';
+  try {
+    const qr = makeQR(payload, 'M');
+    const c = drawQRCanvas(qr, 520, $('card-c-qr').value, '#ffffff');
+    slot.appendChild(c);
+  } catch(e){
+    slot.innerHTML = '<div style="color:#ef4444;font-size:11px;padding:20px">QR yapılamadı</div>';
+  }
+  scaleStage('cardPreview');
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* Card logo upload — generalized handler */
+function setupLogoUploader(opts){
+  // opts: { uploaderId, inputId, defaultLabel, defaultSub, onSet, onClear }
+  function bindInput(){
+    const inp = $(opts.inputId);
+    if (!inp) return;
+    inp.addEventListener('change', handleChange);
+  }
+  function handleChange(e){
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      opts.onSet(dataUrl);
+      const u = $(opts.uploaderId);
+      u.classList.add('has-logo');
+      u.innerHTML =
+        '<img class="logo-thumb" src="'+dataUrl+'">' +
+        '<div class="logo-uploader-text"><strong>Logo eklendi</strong><small>'+escapeHtml(file.name)+'</small></div>' +
+        '<button type="button" class="logo-clear-btn" data-clear="'+opts.uploaderId+'">Kaldır</button>';
+      const clearBtn = u.querySelector('[data-clear]');
+      clearBtn.addEventListener('click', (ev2) => {
+        ev2.preventDefault(); ev2.stopPropagation();
+        resetUI();
+        opts.onClear();
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+  function resetUI(){
+    const u = $(opts.uploaderId);
+    u.classList.remove('has-logo');
+    u.innerHTML =
+      '<span class="logo-uploader-icon">📤</span>' +
+      '<div class="logo-uploader-text"><strong>'+opts.defaultLabel+'</strong><small>'+opts.defaultSub+'</small></div>' +
+      '<input type="file" id="'+opts.inputId+'" accept="image/*" />';
+    bindInput();
+  }
+  bindInput();
+}
+
+setupLogoUploader({
+  uploaderId: 'card-logo-uploader',
+  inputId: 'card-logo-input',
+  defaultLabel: 'Logo yükle',
+  defaultSub: 'PNG / SVG / JPG · ideal 600×200 px',
+  onSet: (d) => { cardLogoData = d; cardRefreshUI(); },
+  onClear: () => { cardLogoData = null; cardRefreshUI(); }
+});
+
+/* =================== FÖY/PLAKA MODE =================== */
+let plLogoData = null;
+let plCurrentType = 'url';
+
+setupTypeTabs('plTabs', 'pl', (t) => { plCurrentType = t; plRefreshUI(); });
+
+function plRefreshUI(){
+  $('pl-pv-title').textContent = v('pl-title') || 'Başlık';
+  $('pl-pv-desc').textContent = v('pl-desc') || '';
+
+  const logoWrap = $('pl-logo-wrap');
+  if (plLogoData){
+    $('pl-logo-img').src = plLogoData;
+    logoWrap.classList.remove('empty');
+  } else {
+    logoWrap.classList.add('empty');
+  }
+
+  const pl = $('plaquePreview');
+  pl.style.setProperty('--p-bg', $('pl-c-bg').value);
+  pl.style.setProperty('--p-text', $('pl-c-text').value);
+  pl.style.setProperty('--p-accent', $('pl-c-accent').value);
+
+  const payload = buildPayload(plCurrentType, 'pl');
+  $('pl-char').textContent = payload.length + ' karakter';
+  const slot = $('pl-qr-slot');
+  slot.innerHTML = '';
+  try {
+    if (!payload) throw new Error('boş');
+    const qr = makeQR(payload, 'M');
+    const c = drawQRCanvas(qr, 640, $('pl-c-qr').value, '#ffffff');
+    slot.appendChild(c);
+  } catch(e){
+    slot.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:60px 20px">İçerik bekleniyor</div>';
+  }
+  scaleStage('plaquePreview');
+}
+
+setupLogoUploader({
+  uploaderId: 'pl-logo-uploader',
+  inputId: 'pl-logo-input',
+  defaultLabel: 'Logo yükle',
+  defaultSub: 'Sayfanın altına yerleşir',
+  onSet: (d) => { plLogoData = d; plRefreshUI(); },
+  onClear: () => { plLogoData = null; plRefreshUI(); }
+});
+
+/* =================== STAGE SCALING =================== */
+function scaleStage(elementId){
+  const el = $(elementId);
+  if (!el) return;
+  const stage = el.parentElement;
+  const stageWidth = stage.clientWidth - 48; // padding
+  const naturalWidth = el === $('cardPreview') ? 830 : 520;
+  const naturalHeight = el === $('cardPreview') ? 510 : 640;
+  const scale = Math.min(1, stageWidth / naturalWidth);
+  el.style.transform = 'scale(' + scale + ')';
+  stage.style.height = (naturalHeight * scale + 48) + 'px';
+}
+function scaleAllStages(){ scaleStage('cardPreview'); scaleStage('plaquePreview'); }
+window.addEventListener('resize', scaleAllStages);
+
+/* =================== EXPORTS — CARD & PLAQUE =================== */
+async function captureElement(el, scale){
+  // Reset transform for capture
+  const oldTransform = el.style.transform;
+  el.style.transform = 'scale(1)';
+  const canvas = await html2canvas(el, {
+    scale: scale || 3,
+    backgroundColor: null,
+    logging: false,
+    useCORS: true
+  });
+  el.style.transform = oldTransform;
+  return canvas;
+}
+
+async function exportCard(kind){
+  try {
+    toast('Hazırlanıyor...');
+    const el = $('cardPreview');
+    const canvas = await captureElement(el, 4);
+    const fname = 'kartvizit-' + ts();
+    if (kind === 'png' || kind === 'jpg'){
+      const mime = kind === 'jpg' ? 'image/jpeg' : 'image/png';
+      const url = canvas.toDataURL(mime, 0.95);
+      const a = document.createElement('a');
+      a.href = url; a.download = fname + '.' + kind; a.click();
+      toast(kind.toUpperCase() + ' indirildi');
+    } else if (kind === 'pdf'){
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit:'mm', format:[83, 51], orientation:'landscape' });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, 83, 51, undefined, 'FAST');
+      pdf.save(fname + '.pdf');
+      toast('PDF indirildi (83×51mm)');
+    }
+  } catch(e){ toast('Hata: ' + e.message, true); }
+}
+
+async function exportPlaque(kind){
+  try {
+    toast('Hazırlanıyor...');
+    const el = $('plaquePreview');
+    const canvas = await captureElement(el, 4);
+    const fname = 'foy-' + ts();
+    if (kind === 'png' || kind === 'jpg'){
+      const mime = kind === 'jpg' ? 'image/jpeg' : 'image/png';
+      const url = canvas.toDataURL(mime, 0.95);
+      const a = document.createElement('a');
+      a.href = url; a.download = fname + '.' + kind; a.click();
+      toast(kind.toUpperCase() + ' indirildi');
+    } else if (kind === 'pdf'){
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit:'mm', format:[130, 160], orientation:'portrait' });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(dataUrl, 'JPEG', 0, 0, 130, 160, undefined, 'FAST');
+      pdf.save(fname + '.pdf');
+      toast('PDF indirildi (130×160mm)');
+    }
+  } catch(e){ toast('Hata: ' + e.message, true); }
+}
+
+/* =================== ACTION ROUTING =================== */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const a = btn.dataset.action;
+  if (a.startsWith('qr-')) qrExport(a.split('-')[1]);
+  else if (a.startsWith('card-')) exportCard(a.split('-')[1]);
+  else if (a.startsWith('pl-')) exportPlaque(a.split('-')[1]);
+});
+
+/* =================== COLOR SYNC =================== */
+function bindColor(inputId, labelId, onChange){
+  const inp = $(inputId), lbl = $(labelId);
+  const upd = () => { lbl.textContent = inp.value.toUpperCase(); if (onChange) onChange(); };
+  inp.addEventListener('input', upd); upd();
+}
+
+/* QR */
+bindColor('qr-fg', 'qr-fg-text', qrRender);
+bindColor('qr-bg', 'qr-bg-text', qrRender);
+$('qr-mm').addEventListener('input', () => $('qr-mm-text').textContent = $('qr-mm').value + ' mm');
+$('qr-ecc').addEventListener('change', qrRender);
+
+/* Card */
+['card-c-bg','card-c-text','card-c-accent','card-c-qr'].forEach(id => bindColor(id, id+'-text', cardRefreshUI));
+
+/* Plaque */
+['pl-c-bg','pl-c-text','pl-c-accent','pl-c-qr'].forEach(id => bindColor(id, id+'-text', plRefreshUI));
+
+/* =================== THEME PRESETS =================== */
+const cardThemes = [
+  { name:'Klasik',    bg:'#ffffff', text:'#0f172a', accent:'#6366f1', qr:'#0f172a' },
+  { name:'Lacivert',  bg:'#0f172a', text:'#f8fafc', accent:'#06b6d4', qr:'#0f172a' },
+  { name:'Sıcak',     bg:'#fef3c7', text:'#451a03', accent:'#d97706', qr:'#451a03' },
+  { name:'Mor',       bg:'#ffffff', text:'#1e1b4b', accent:'#a855f7', qr:'#1e1b4b' },
+  { name:'Yeşil',     bg:'#ffffff', text:'#064e3b', accent:'#10b981', qr:'#064e3b' },
+  { name:'Kırmızı',   bg:'#ffffff', text:'#7f1d1d', accent:'#dc2626', qr:'#7f1d1d' },
+  { name:'Karanlık',  bg:'#1e293b', text:'#f1f5f9', accent:'#fbbf24', qr:'#1e293b' },
+  { name:'Krem',      bg:'#fafaf9', text:'#292524', accent:'#0891b2', qr:'#292524' }
+];
+
+function renderPresets(containerId, themes, prefix, refresh){
+  const c = $(containerId);
+  c.innerHTML = '';
+  themes.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'theme-preset' + (i === 0 ? ' active' : '');
+    el.style.setProperty('--p-bg', t.bg);
+    el.style.setProperty('--p-accent', t.accent);
+    el.title = t.name;
+    el.addEventListener('click', () => {
+      $$('#' + containerId + ' .theme-preset').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      $(prefix + '-c-bg').value = t.bg;
+      $(prefix + '-c-text').value = t.text;
+      $(prefix + '-c-accent').value = t.accent;
+      $(prefix + '-c-qr').value = t.qr;
+      $(prefix + '-c-bg').dispatchEvent(new Event('input'));
+      $(prefix + '-c-text').dispatchEvent(new Event('input'));
+      $(prefix + '-c-accent').dispatchEvent(new Event('input'));
+      $(prefix + '-c-qr').dispatchEvent(new Event('input'));
+      refresh();
+    });
+    c.appendChild(el);
+  });
+}
+renderPresets('card-presets', cardThemes, 'card', cardRefreshUI);
+renderPresets('pl-presets', cardThemes, 'pl', plRefreshUI);
+
+/* =================== LIVE FORM UPDATES =================== */
+$$('#qr-form-url, #qr-form-vcard, #qr-form-text, #qr-form-email, #qr-form-phone, #qr-form-sms, #qr-form-wifi').forEach(f => {
+  f.addEventListener('input', qrRender);
+  f.addEventListener('change', qrRender);
+});
+$('qr-mm').addEventListener('input', qrRender);
+
+['card-first','card-last','card-title','card-org','card-phone','card-email','card-web','card-addr'].forEach(id => {
+  $(id).addEventListener('input', cardRefreshUI);
+});
+
+$$('#pl-form-url, #pl-form-wifi, #pl-form-text, #pl-form-vcard, #pl-form-email, #pl-form-phone').forEach(f => {
+  f.addEventListener('input', plRefreshUI);
+  f.addEventListener('change', plRefreshUI);
+});
+['pl-title','pl-desc'].forEach(id => $(id).addEventListener('input', plRefreshUI));
+
+/* =================== THEME =================== */
+const themeToggle = $('themeToggle');
+let savedTheme = null;
+try { savedTheme = localStorage.getItem('qr-studio-theme'); } catch(e){}
+if (savedTheme === 'light'){
+  document.documentElement.setAttribute('data-theme', 'light');
+  themeToggle.textContent = '☀️';
+}
+themeToggle.addEventListener('click', () => {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight){
+    document.documentElement.removeAttribute('data-theme');
+    themeToggle.textContent = '🌙';
+    try { localStorage.setItem('qr-studio-theme', 'dark'); } catch(e){}
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeToggle.textContent = '☀️';
+    try { localStorage.setItem('qr-studio-theme', 'light'); } catch(e){}
+  }
+});
+
+/* =================== INIT =================== */
+qrRender();
+cardRefreshUI();
+plRefreshUI();
+setTimeout(scaleAllStages, 100);
+
+})();
+</script>
+
+</body>
+</html>
